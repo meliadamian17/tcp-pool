@@ -58,19 +58,24 @@ func (p *ConnectionPool) Get() (net.Conn, error) {
 	case conn := <-p.idleConns:
 		// Retrieved an idle connection, check if it's still valid.
 		if Validate(conn) {
+			p.outputStream.Printf("Idle Connnection Found to %v", p.address)
 			return conn, nil
 		}
 		// If not valid, try creating a new connection
+		p.outputStream.Printf("No Idle Connection Found! Trying to Open a New Connection...")
 		return p.newConnection()
 	default:
 		// No idle connections, try to create a new one if under max limit.
+		p.outputStream.Printf("No Idle Connection Found! Trying to Open a New Connection...")
 		return p.newConnection()
 	}
 }
 
+// TODO: Add retry options (either retry spawning connection or go back and look for an idle connection again)
 func (p *ConnectionPool) newConnection() (net.Conn, error) {
 	conn, err := net.Dial("tcp", p.address)
 	if err != nil {
+		p.outputStream.Printf("Unable to create a new connection to %v", p.address)
 		return nil, err
 	}
 
@@ -81,9 +86,11 @@ func (p *ConnectionPool) Release(conn net.Conn) error {
 	select {
 	case p.idleConns <- conn:
 		// Successfully returned the connection to the pool.
+		p.outputStream.Print("Successfully released connection back into the pool")
 		return nil
 	default:
 		// Pool is full, close the connection.
+		p.outputStream.Printf("The pool is full! Connection was is now closed")
 		return conn.Close()
 	}
 }

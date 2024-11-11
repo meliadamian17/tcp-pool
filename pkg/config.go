@@ -9,6 +9,7 @@ import (
 	"time"
 )
 
+// TODO: Add verbose option for logging
 type Config struct {
 	address        string
 	name           string
