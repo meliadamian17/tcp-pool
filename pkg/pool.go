@@ -10,14 +10,7 @@ type Pool struct {
 }
 
 func New(c Config) (*Pool, error) {
-	impl, err := internal.NewConnectionPool(
-		c.address,
-		c.name,
-		c.maxConnections,
-		c.connTimeout,
-		c.idleTimeout,
-		c.outputStream,
-	)
+	impl, err := internal.NewConnectionPool(*c.impl)
 	if err != nil {
 		return nil, err
 	}

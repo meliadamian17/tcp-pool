@@ -5,7 +5,7 @@ import (
 	"encoding/hex"
 )
 
-func GenerateNameByAddress(address string) string {
+func IDByAddress(address string) string {
 
 	hash := sha256.Sum256([]byte(address))
 

@@ -1,20 +1,15 @@
 package internal
 
 import (
+	"fmt"
 	"net"
 	"time"
 )
 
-// TODO: finish using this everywhere
-type ConnWithID struct {
-	Conn net.Conn
-	ID   string
-}
-
-func Validate(conn net.Conn) bool {
+func Validate(c net.Conn) bool {
 	one := []byte{}
-	conn.SetReadDeadline(time.Now().Add(1 * time.Second))
-	if _, err := conn.Read(one); err != nil {
+	c.SetReadDeadline(time.Now().Add(1 * time.Second))
+	if _, err := c.Read(one); err != nil {
 		if netErr, ok := err.(net.Error); ok && netErr.Timeout() {
 			return true
 		}
@@ -28,17 +23,20 @@ func (p *ConnectionPool) CleanupIdleConns() {
 	defer ticker.Stop()
 	for range ticker.C {
 		select {
-		case conn := <-p.idleConns:
-			if !Validate(conn) {
-				conn.Close()
-				//TODO: attach IDs to connections
-				p.outputStream.Print("Connection was cleaned up due to being idle")
+		case c := <-p.idleConns:
+			if !Validate(c) {
+				c.Close()
+				if p.hooks.OnConnectionClose != nil {
+					p.hooks.OnConnectionClose(c)
+				} else {
+					fmt.Printf("Connection was cleaned up due to being idle")
+				}
 			} else {
 				// Put it back if still valid
-				p.idleConns <- conn
+				p.idleConns <- c
 			}
 		default:
-			p.outputStream.Print("There are no idle connections")
+			fmt.Print("There are no idle connections")
 			// No connections to clean up.
 		}
 	}
