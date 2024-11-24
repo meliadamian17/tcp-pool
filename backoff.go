@@ -1,4 +1,4 @@
-package pool
+package tcppool
 
 import "github.com/meliadamian17/tcp-pool/internal/backoff"
 

@@ -1,10 +1,10 @@
-package pool
+package tcppool
 
 import (
 	"testing"
 	"time"
 
-	pool "github.com/meliadamian17/tcp-pool/pkg"
+	pool "github.com/meliadamian17/tcp-pool"
 	"github.com/meliadamian17/tcp-pool/tests/utils"
 )
 
