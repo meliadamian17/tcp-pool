@@ -8,23 +8,33 @@ import (
 	"time"
 )
 
+// ConnectionPool represents a pool of reusable TCP connections.
+// It manages the creation, reuse, and cleanup of idle connections.
 type ConnectionPool struct {
-	Address        string
-	Name           string
-	MaxConnections int
-	IdleTimeout    time.Duration
-	ConnTimeout    time.Duration
-	IdleConns      chan net.Conn
-	ActiveConns    int
-	MaxRetries     uint
-	Backoff        backoff.Backoff
-	Hooks          PoolHooks
+	Address        string          // Network address for the pool's connections
+	Name           string          // Name of the connection pool
+	MaxConnections int             // Maximum number of active connections
+	IdleTimeout    time.Duration   // Duration after which idle connections are cleaned up
+	ConnTimeout    time.Duration   // Timeout for establishing a new connection
+	IdleConns      chan net.Conn   // Channel for storing idle connections
+	ActiveConns    int             // Current number of active connections
+	MaxRetries     uint            // Maximum number of retries for connection establishment
+	Backoff        backoff.Backoff // Backoff strategy for retries
+	Hooks          PoolHooks       // Hooks for connection pool events
 }
 
+// NewConnectionPool initializes a new ConnectionPool with the given configuration.
+//
+// Parameters:
+//   - c: A ConfigImpl object containing pool configuration.
+//
+// Returns:
+//   - A pointer to the created ConnectionPool.
+//   - An error, if the initialization fails.
 func NewConnectionPool(c ConfigImpl) (*ConnectionPool, error) {
 	if c.MaxConnections < 0 {
 		err := errors.New(
-			fmt.Sprintf("Max Conns Must be greater than 0. Supplied: %v", c.MaxConnections),
+			fmt.Sprintf("Max Conns must be greater than 0. Supplied: %v", c.MaxConnections),
 		)
 		if c.Hooks.OnPoolCreateError != nil {
 			c.Hooks.OnPoolCreateError(err)
@@ -49,7 +59,7 @@ func NewConnectionPool(c ConfigImpl) (*ConnectionPool, error) {
 	if pool.Hooks.OnPoolCreate != nil {
 		pool.Hooks.OnPoolCreate(c)
 	} else {
-		fmt.Printf("New Connection pool for address %v created\n", pool.Address)
+		fmt.Printf("New connection pool for address %v created\n", pool.Address)
 	}
 
 	go pool.CleanupIdleConns()
@@ -57,29 +67,35 @@ func NewConnectionPool(c ConfigImpl) (*ConnectionPool, error) {
 	return pool, nil
 }
 
+// Get retrieves a connection from the pool. If an idle connection is available,
+// it is returned; otherwise, a new connection is created.
+//
+// Returns:
+//   - A net.Conn object representing the connection.
+//   - An error, if the connection retrieval fails.
 func (p *ConnectionPool) Get() (net.Conn, error) {
 	select {
 	case conn := <-p.IdleConns:
-		// Check if the idle connection is still valid
 		if Validate(conn) {
 			if p.Hooks.OnConnectionAcquire != nil {
 				p.Hooks.OnConnectionAcquire(conn)
 			} else {
-				fmt.Printf("Idle Connection Found to %v\n", p.Address)
+				fmt.Printf("Idle connection found to %v\n", p.Address)
 			}
 			return conn, nil
 		}
-		// Connection is invalid, create a new one
-		fmt.Printf("No valid Idle Connection Found! Trying to Open a New Connection...\n")
+		fmt.Printf("No valid idle connection found! Trying to open a new connection...\n")
 		return p.newConnection()
-
 	default:
-		// No idle connection available, create a new one
-		fmt.Printf("No Idle Connection Found! Trying to Open a New Connection...\n")
+		fmt.Printf("No idle connection found! Trying to open a new connection...\n")
 		return p.newConnection()
 	}
 }
 
+// newConnectionAsync creates a new connection asynchronously and applies backoff strategies for retries.
+//
+// Returns:
+//   - A channel that sends a struct containing the connection or an error.
 func (p *ConnectionPool) newConnectionAsync() <-chan struct {
 	conn net.Conn
 	err  error
@@ -96,7 +112,6 @@ func (p *ConnectionPool) newConnectionAsync() <-chan struct {
 		for attempt := 1; attempt <= int(p.MaxRetries); attempt++ {
 			conn, err = net.DialTimeout("tcp", p.Address, p.ConnTimeout)
 			if err == nil {
-				// Successfully established the connection
 				resultChan <- struct {
 					conn net.Conn
 					err  error
@@ -105,11 +120,9 @@ func (p *ConnectionPool) newConnectionAsync() <-chan struct {
 				return
 			}
 
-			// Apply backoff strategy
 			time.Sleep(p.Backoff.NextRetry(uint(attempt)))
 		}
 
-		// After exhausting retries, send the error
 		resultChan <- struct {
 			conn net.Conn
 			err  error
@@ -120,8 +133,12 @@ func (p *ConnectionPool) newConnectionAsync() <-chan struct {
 	return resultChan
 }
 
+// newConnection creates a new connection synchronously and triggers hooks for connection events.
+//
+// Returns:
+//   - A net.Conn object representing the connection.
+//   - An error, if the connection creation fails.
 func (p *ConnectionPool) newConnection() (net.Conn, error) {
-	// Wait for the result from the async connection creator
 	resultChan := p.newConnectionAsync()
 	result := <-resultChan
 	if result.err != nil {
@@ -136,16 +153,23 @@ func (p *ConnectionPool) newConnection() (net.Conn, error) {
 	if p.Hooks.OnConnectionCreate != nil {
 		p.Hooks.OnConnectionCreate(result.conn)
 	} else {
-		fmt.Printf("New Connection Created: %v\n", result.conn)
+		fmt.Printf("New connection created: %v\n", result.conn)
 	}
 
 	return result.conn, nil
 }
 
+// Release returns a previously acquired connection to the pool.
+// If the pool is full, the connection is closed instead.
+//
+// Parameters:
+//   - conn: The connection to be returned to the pool.
+//
+// Returns:
+//   - An error, if the release process fails.
 func (p *ConnectionPool) Release(conn net.Conn) error {
 	select {
 	case p.IdleConns <- conn:
-		// Successfully returned the connection to the pool
 		if p.Hooks.OnConnectionRelease != nil {
 			p.Hooks.OnConnectionRelease(conn)
 		} else {
@@ -153,7 +177,6 @@ func (p *ConnectionPool) Release(conn net.Conn) error {
 		}
 		return nil
 	default:
-		// Pool is full, close the connection
 		if p.Hooks.OnConnectionClose != nil {
 			p.Hooks.OnConnectionClose(conn)
 		} else {

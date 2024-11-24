@@ -6,8 +6,15 @@ import (
 	"time"
 )
 
+// Validate checks if a given connection is still valid by performing a read operation with a timeout.
+// It determines whether the connection is idle, invalid, or active.
+//
+// Parameters:
+//   - c: The connection to validate.
+//
+// Returns:
+//   - A boolean indicating whether the connection is valid.
 func Validate(c net.Conn) bool {
-
 	c.SetReadDeadline(time.Now().Add(1 * time.Second))
 	one := make([]byte, 1)
 	_, err := c.Read(one)
@@ -23,6 +30,7 @@ func Validate(c net.Conn) bool {
 	return true
 }
 
+// CleanupIdleConns periodically checks for idle connections and removes them if they are no longer valid.
 func (p *ConnectionPool) CleanupIdleConns() {
 	ticker := time.NewTicker(p.IdleTimeout)
 	defer ticker.Stop()
