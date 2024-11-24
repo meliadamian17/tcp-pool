@@ -5,21 +5,20 @@ import (
 	"fmt"
 	"meliadamian17/tcp-pool/internal/backoff"
 	"net"
-	"net/netip"
 	"time"
 )
 
 type ConnectionPool struct {
-	address        string
-	name           string
-	maxConnections int
-	idleTimeout    time.Duration
-	connTimeout    time.Duration
-	idleConns      chan net.Conn
-	activeConns    int
-	maxRetries     uint
-	backoff        backoff.Backoff
-	hooks          PoolHooks
+	Address        string
+	Name           string
+	MaxConnections int
+	IdleTimeout    time.Duration
+	ConnTimeout    time.Duration
+	IdleConns      chan net.Conn
+	ActiveConns    int
+	MaxRetries     uint
+	Backoff        backoff.Backoff
+	Hooks          PoolHooks
 }
 
 func NewConnectionPool(c ConfigImpl) (*ConnectionPool, error) {
@@ -35,32 +34,22 @@ func NewConnectionPool(c ConfigImpl) (*ConnectionPool, error) {
 		return nil, err
 	}
 
-	if _, err := netip.ParseAddr(c.Address); err != nil {
-		err := errors.New(fmt.Sprintf("Invalid IP Supplied. | %v", c.Address))
-		if c.Hooks.OnPoolCreateError != nil {
-			c.Hooks.OnPoolCreateError(err)
-		} else {
-			fmt.Println(err)
-		}
-		return nil, err
-	}
-
 	pool := &ConnectionPool{
-		address:        c.Address,
-		name:           c.Name,
-		maxConnections: c.MaxConnections,
-		connTimeout:    c.ConnTimeout,
-		idleTimeout:    c.IdleTimeout,
-		idleConns:      make(chan net.Conn, c.MaxConnections),
-		maxRetries:     c.MaxRetries,
-		backoff:        c.Backoff,
-		hooks:          c.Hooks,
+		Address:        c.Address,
+		Name:           c.Name,
+		MaxConnections: c.MaxConnections,
+		ConnTimeout:    c.ConnTimeout,
+		IdleTimeout:    c.IdleTimeout,
+		IdleConns:      make(chan net.Conn, c.MaxConnections),
+		MaxRetries:     c.MaxRetries,
+		Backoff:        c.Backoff,
+		Hooks:          c.Hooks,
 	}
 
-	if pool.hooks.OnPoolCreate != nil {
-		pool.hooks.OnPoolCreate(c)
+	if pool.Hooks.OnPoolCreate != nil {
+		pool.Hooks.OnPoolCreate(c)
 	} else {
-		fmt.Printf("New Connection pool for address %v created\n", pool.address)
+		fmt.Printf("New Connection pool for address %v created\n", pool.Address)
 	}
 
 	go pool.CleanupIdleConns()
@@ -70,13 +59,13 @@ func NewConnectionPool(c ConfigImpl) (*ConnectionPool, error) {
 
 func (p *ConnectionPool) Get() (net.Conn, error) {
 	select {
-	case conn := <-p.idleConns:
+	case conn := <-p.IdleConns:
 		// Check if the idle connection is still valid
 		if Validate(conn) {
-			if p.hooks.OnConnectionAcquire != nil {
-				p.hooks.OnConnectionAcquire(conn)
+			if p.Hooks.OnConnectionAcquire != nil {
+				p.Hooks.OnConnectionAcquire(conn)
 			} else {
-				fmt.Printf("Idle Connection Found to %v\n", p.address)
+				fmt.Printf("Idle Connection Found to %v\n", p.Address)
 			}
 			return conn, nil
 		}
@@ -104,8 +93,8 @@ func (p *ConnectionPool) newConnectionAsync() <-chan struct {
 		var conn net.Conn
 		var err error
 
-		for attempt := 1; attempt <= int(p.maxRetries); attempt++ {
-			conn, err = net.DialTimeout("tcp", p.address, p.connTimeout)
+		for attempt := 1; attempt <= int(p.MaxRetries); attempt++ {
+			conn, err = net.DialTimeout("tcp", p.Address, p.ConnTimeout)
 			if err == nil {
 				// Successfully established the connection
 				resultChan <- struct {
@@ -117,14 +106,14 @@ func (p *ConnectionPool) newConnectionAsync() <-chan struct {
 			}
 
 			// Apply backoff strategy
-			time.Sleep(p.backoff.NextRetry(uint(attempt)))
+			time.Sleep(p.Backoff.NextRetry(uint(attempt)))
 		}
 
 		// After exhausting retries, send the error
 		resultChan <- struct {
 			conn net.Conn
 			err  error
-		}{conn: nil, err: fmt.Errorf("failed to establish connection after %d retries: %w", p.maxRetries, err)}
+		}{conn: nil, err: fmt.Errorf("failed to establish connection after %d retries: %w", p.MaxRetries, err)}
 		close(resultChan)
 	}()
 
@@ -136,16 +125,16 @@ func (p *ConnectionPool) newConnection() (net.Conn, error) {
 	resultChan := p.newConnectionAsync()
 	result := <-resultChan
 	if result.err != nil {
-		if p.hooks.OnConnectionError != nil {
-			p.hooks.OnConnectionError(result.err)
+		if p.Hooks.OnConnectionError != nil {
+			p.Hooks.OnConnectionError(result.err)
 		} else {
 			fmt.Printf("Failed to create new connection: %v\n", result.err)
 		}
 		return nil, result.err
 	}
 
-	if p.hooks.OnConnectionCreate != nil {
-		p.hooks.OnConnectionCreate(result.conn)
+	if p.Hooks.OnConnectionCreate != nil {
+		p.Hooks.OnConnectionCreate(result.conn)
 	} else {
 		fmt.Printf("New Connection Created: %v\n", result.conn)
 	}
@@ -155,18 +144,18 @@ func (p *ConnectionPool) newConnection() (net.Conn, error) {
 
 func (p *ConnectionPool) Release(conn net.Conn) error {
 	select {
-	case p.idleConns <- conn:
+	case p.IdleConns <- conn:
 		// Successfully returned the connection to the pool
-		if p.hooks.OnConnectionRelease != nil {
-			p.hooks.OnConnectionRelease(conn)
+		if p.Hooks.OnConnectionRelease != nil {
+			p.Hooks.OnConnectionRelease(conn)
 		} else {
 			fmt.Println("Successfully released connection back into the pool")
 		}
 		return nil
 	default:
 		// Pool is full, close the connection
-		if p.hooks.OnConnectionClose != nil {
-			p.hooks.OnConnectionClose(conn)
+		if p.Hooks.OnConnectionClose != nil {
+			p.Hooks.OnConnectionClose(conn)
 		} else {
 			fmt.Println("Connection is closing due to pool being full")
 		}

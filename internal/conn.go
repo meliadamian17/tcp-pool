@@ -7,37 +7,45 @@ import (
 )
 
 func Validate(c net.Conn) bool {
-	one := []byte{}
+
 	c.SetReadDeadline(time.Now().Add(1 * time.Second))
-	if _, err := c.Read(one); err != nil {
+	one := make([]byte, 1)
+	_, err := c.Read(one)
+	if err != nil {
 		if netErr, ok := err.(net.Error); ok && netErr.Timeout() {
-			return true
+			fmt.Println("Connection is idle (timeout occurred)")
+			return false
 		}
+		fmt.Printf("Connection is invalid: %v\n", err)
 		return false
 	}
+	fmt.Println("Connection is valid (data received)")
 	return true
 }
 
 func (p *ConnectionPool) CleanupIdleConns() {
-	ticker := time.NewTicker(p.idleTimeout)
+	ticker := time.NewTicker(p.IdleTimeout)
 	defer ticker.Stop()
 	for range ticker.C {
-		select {
-		case c := <-p.idleConns:
-			if !Validate(c) {
-				c.Close()
-				if p.hooks.OnConnectionClose != nil {
-					p.hooks.OnConnectionClose(c)
+		numIdle := len(p.IdleConns)
+		fmt.Printf("Idle connections to process: %d\n", numIdle)
+
+		for i := 0; i < numIdle; i++ {
+			select {
+			case c := <-p.IdleConns:
+				if !Validate(c) {
+					fmt.Println("Cleaning up idle connection")
+					c.Close()
+					if p.Hooks.OnConnectionClose != nil {
+						p.Hooks.OnConnectionClose(c)
+					}
 				} else {
-					fmt.Printf("Connection was cleaned up due to being idle")
+					fmt.Println("Connection is valid, requeuing")
+					p.IdleConns <- c
 				}
-			} else {
-				// Put it back if still valid
-				p.idleConns <- c
+			default:
+				fmt.Println("No more idle connections to process")
 			}
-		default:
-			fmt.Print("There are no idle connections")
-			// No connections to clean up.
 		}
 	}
 }

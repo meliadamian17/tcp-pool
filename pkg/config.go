@@ -17,7 +17,7 @@ func NewConfig(
 	connTimeout, idleTimeout time.Duration,
 	maxRetries uint,
 	backoff backoff.Backoff,
-	hooks internal.PoolHooks,
+	hooks PoolHooks,
 ) *Config {
 	if len(name) == 0 {
 		name = utils.IDByAddress(address)
@@ -30,7 +30,7 @@ func NewConfig(
 		idleTimeout,
 		maxRetries,
 		backoff,
-		hooks,
+		hooks.ToInternal(),
 	)
 	return &Config{impl: impl}
 }

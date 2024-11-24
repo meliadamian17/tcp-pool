@@ -10,6 +10,6 @@ type PoolHooks struct {
 	OnConnectionRelease func(conn net.Conn)
 	OnConnectionClose   func(conn net.Conn)
 	OnConnectionError   func(err error)
-	OnPoolCreate        func(c Config)
+	OnPoolCreate        func(c ConfigImpl)
 	OnPoolCreateError   func(err error)
 }

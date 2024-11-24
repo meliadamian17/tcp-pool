@@ -2,33 +2,33 @@ package pool
 
 import "meliadamian17/tcp-pool/internal/backoff"
 
-func NewExponentialBackoff(baseDelay, maxDelay uint) backoff.ExponentialBackoff {
-	return backoff.ExponentialBackoff{
+func NewExponentialBackoff(baseDelay, maxDelay uint) backoff.Backoff {
+	return &backoff.ExponentialBackoff{
 		Base:     baseDelay,
 		MaxDelay: maxDelay,
 	}
 }
 
-func NewFibonacciBackoff(maxDelay uint) backoff.FibonacciBackoff {
-	return backoff.FibonacciBackoff{
+func NewFibonacciBackoff(maxDelay uint) backoff.Backoff {
+	return &backoff.FibonacciBackoff{
 		MaxDelay: maxDelay,
 	}
 }
 
-func NewFixedBackoff(interval uint) backoff.FixedBackoff {
-	return backoff.FixedBackoff{
+func NewFixedBackoff(interval uint) backoff.Backoff {
+	return &backoff.FixedBackoff{
 		Interval: interval,
 	}
 }
 
-func NewLinearBackoff(scalar uint) backoff.LinearBackoff {
-	return backoff.LinearBackoff{
+func NewLinearBackoff(scalar uint) backoff.Backoff {
+	return &backoff.LinearBackoff{
 		Scalar: scalar,
 	}
 }
 
-func NewPolynomialBackoff(exponent uint) backoff.PolynomialBackoff {
-	return backoff.PolynomialBackoff{
+func NewPolynomialBackoff(exponent uint) backoff.Backoff {
+	return &backoff.PolynomialBackoff{
 		Exponent: exponent,
 	}
 }
