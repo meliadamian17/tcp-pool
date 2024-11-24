@@ -1,6 +1,6 @@
 package tcppool
 
-import "github.com/meliadamian17/tcp-pool/internal/backoff"
+import "github.com/meliadamian17/tcppool/internal/backoff"
 
 // NewExponentialBackoff creates a new exponential backoff strategy.
 // The delay between retries doubles with each attempt until reaching the maximum delay.

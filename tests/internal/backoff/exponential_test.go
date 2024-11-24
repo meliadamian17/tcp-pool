@@ -4,8 +4,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/meliadamian17/tcp-pool/internal/backoff"
-	"github.com/meliadamian17/tcp-pool/tests/utils"
+	"github.com/meliadamian17/tcppool/internal/backoff"
+	"github.com/meliadamian17/tcppool/tests/utils"
 )
 
 func TestExponentialBackoff(t *testing.T) {

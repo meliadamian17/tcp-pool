@@ -3,8 +3,8 @@ package internal
 import (
 	"time"
 
-	"github.com/meliadamian17/tcp-pool/internal/backoff"
-	"github.com/meliadamian17/tcp-pool/utils"
+	"github.com/meliadamian17/tcppool/internal/backoff"
+	"github.com/meliadamian17/tcppool/utils"
 )
 
 // ConfigImpl holds the internal configuration for the connection pool.

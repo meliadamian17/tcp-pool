@@ -3,7 +3,7 @@ package tcppool
 import (
 	"net"
 
-	"github.com/meliadamian17/tcp-pool/internal"
+	"github.com/meliadamian17/tcppool/internal"
 )
 
 // PoolHooks defines callback functions that can be triggered

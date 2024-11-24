@@ -3,9 +3,9 @@ package tcppool
 import (
 	"time"
 
-	"github.com/meliadamian17/tcp-pool/internal"
-	"github.com/meliadamian17/tcp-pool/internal/backoff"
-	"github.com/meliadamian17/tcp-pool/utils"
+	"github.com/meliadamian17/tcppool/internal"
+	"github.com/meliadamian17/tcppool/internal/backoff"
+	"github.com/meliadamian17/tcppool/utils"
 )
 
 // Config represents the configuration for a connection pool.

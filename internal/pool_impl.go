@@ -6,7 +6,7 @@ import (
 	"net"
 	"time"
 
-	"github.com/meliadamian17/tcp-pool/internal/backoff"
+	"github.com/meliadamian17/tcppool/internal/backoff"
 )
 
 // ConnectionPool represents a pool of reusable TCP connections.

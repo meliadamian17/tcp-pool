@@ -5,8 +5,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/meliadamian17/tcp-pool/internal"
-	"github.com/meliadamian17/tcp-pool/tests/utils"
+	"github.com/meliadamian17/tcppool/internal"
+	"github.com/meliadamian17/tcppool/tests/utils"
 )
 
 func TestPoolInitialization(t *testing.T) {
