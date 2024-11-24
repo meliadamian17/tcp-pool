@@ -1,10 +1,11 @@
 package pool
 
 import (
-	"meliadamian17/tcp-pool/internal"
-	"meliadamian17/tcp-pool/internal/backoff"
-	"meliadamian17/tcp-pool/utils"
 	"time"
+
+	"github.com/meliadamian17/tcp-pool/internal"
+	"github.com/meliadamian17/tcp-pool/internal/backoff"
+	"github.com/meliadamian17/tcp-pool/utils"
 )
 
 // Config represents the configuration for a connection pool.

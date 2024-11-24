@@ -4,8 +4,8 @@ import (
 	"testing"
 	"time"
 
-	pool "meliadamian17/tcp-pool/pkg"
-	"meliadamian17/tcp-pool/tests/utils"
+	pool "github.com/meliadamian17/tcp-pool/pkg"
+	"github.com/meliadamian17/tcp-pool/tests/utils"
 )
 
 func TestPoolCreation(t *testing.T) {

@@ -1,8 +1,9 @@
 package pool
 
 import (
-	"meliadamian17/tcp-pool/internal"
 	"net"
+
+	"github.com/meliadamian17/tcp-pool/internal"
 )
 
 // PoolHooks defines callback functions that can be triggered

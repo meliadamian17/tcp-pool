@@ -1,8 +1,9 @@
 package pool
 
 import (
-	"meliadamian17/tcp-pool/internal"
 	"net"
+
+	"github.com/meliadamian17/tcp-pool/internal"
 )
 
 // Pool represents a connection pool that manages TCP connections.

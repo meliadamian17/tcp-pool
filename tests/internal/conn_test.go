@@ -5,8 +5,8 @@ import (
 	"testing"
 	"time"
 
-	"meliadamian17/tcp-pool/internal"
-	"meliadamian17/tcp-pool/tests/utils"
+	"github.com/meliadamian17/tcp-pool/internal"
+	"github.com/meliadamian17/tcp-pool/tests/utils"
 )
 
 func TestValidateConnection_ValidConnection(t *testing.T) {

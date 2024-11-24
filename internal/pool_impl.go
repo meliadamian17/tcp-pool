@@ -3,9 +3,10 @@ package internal
 import (
 	"errors"
 	"fmt"
-	"meliadamian17/tcp-pool/internal/backoff"
 	"net"
 	"time"
+
+	"github.com/meliadamian17/tcp-pool/internal/backoff"
 )
 
 // ConnectionPool represents a pool of reusable TCP connections.
